@@ -199,7 +199,7 @@ public class MapPanel extends JPanel {
 
 	/* constants ... */
 	private static final TileServer[] TILESERVERS = {
-        new TileServer("https://wxs.ign.fr/7xxv3vzqfanfvvslkkjezvnm/geoportail/wmts?LAYER=ORTHOIMAGERY.ORTHOPHOTOS&"
+        new TileServer("https://wxs.ign.fr/PRATIQUE/geoportail/wmts?LAYER=ORTHOIMAGERY.ORTHOPHOTOS&"
                 + "EXCEPTIONS=text/xml&FORMAT=image/jpeg&SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&STYLE=normal&TILEMATRIXSET=PM&", 21)
 	};
 
