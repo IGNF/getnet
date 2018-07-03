@@ -10,6 +10,7 @@
  *******************************************************************************/
 
 package fr.ign.ignfab.gui;
+
 import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
 import java.awt.BorderLayout;
@@ -87,9 +88,19 @@ import javax.swing.text.html.HTMLEditorKit;
 import javax.swing.text.html.StyleSheet;
 import javax.xml.parsers.SAXParserFactory;
 
+import org.geotools.geometry.jts.JTS;
+import org.geotools.geometry.jts.JTSFactoryFinder;
+import org.geotools.referencing.CRS;
+import org.opengis.referencing.crs.CRSFactory;
+import org.opengis.referencing.crs.CoordinateReferenceSystem;
+import org.opengis.referencing.operation.MathTransform;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
+
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryFactory;
 
 
 /**
@@ -145,12 +156,16 @@ public class MapPanel extends JPanel {
 	public int hrect = 0;
 	public boolean selectRectangle = false;
 
-
+	public static double[] RES = new double[22];
+	
+	
 	public static final class TileServer {
 		private final String url;
 		private final int maxZoom;
 		private boolean broken;
 
+		
+		
 		private TileServer(String url, int maxZoom) {
 			this.url = url;
 			this.maxZoom = maxZoom;
@@ -175,11 +190,17 @@ public class MapPanel extends JPanel {
 			this.broken = broken;
 		}
 	}
+	
+	
+	// private static String LAYER = "GEOGRAPHICALGRIDSYSTEMS.MAPS";
+    // private static String LAYER = "GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-EXPRESS.ROUTIER";
+    // private static String LAYER = "GEOGRAPHICALGRIDSYSTEMS.PLANIGN";
+    // private static String LAYER = "ORTHOIMAGERY.ORTHOPHOTOS";
 
 	/* constants ... */
 	private static final TileServer[] TILESERVERS = {
-		new TileServer("http://tile.openstreetmap.org/", 18),
-		new TileServer("http://tah.openstreetmap.org/Tiles/tile/", 17),
+        new TileServer("https://wxs.ign.fr/7xxv3vzqfanfvvslkkjezvnm/geoportail/wmts?LAYER=ORTHOIMAGERY.ORTHOPHOTOS&"
+                + "EXCEPTIONS=text/xml&FORMAT=image/jpeg&SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&STYLE=normal&TILEMATRIXSET=PM&", 21)
 	};
 
 	private static final String NAMEFINDER_URL = "http://gazetteer.openstreetmap.org/namefinder/search.xml";
@@ -211,11 +232,56 @@ public class MapPanel extends JPanel {
 	// tile url construction.
 	// change here to support some other tile
 
-	public static String getTileString(TileServer tileServer, int xtile, int ytile, int zoom) {
-		String number = ("" + zoom + "/" + xtile + "/" + ytile);
-		String url = tileServer.getURL() + number + ".png";
-		//System.err.println(url);
-		return url;
+	public static String getTileString(TileServer tileServer, int xtile, int ytile, int zoom, Point.Double position) {
+	    if (position != null) {
+	        try {
+    	        double lon = position.getX();
+    	        double lat = position.getY();
+    	        // System.out.println(lon + "," + lat);
+    	        
+    	        // Change to Web Mercator
+    	        CoordinateReferenceSystem sourceCRS = CRS.decode("EPSG:4326");
+    	        CoordinateReferenceSystem targetCRS = CRS.decode("EPSG:3857");
+    	        MathTransform transform = CRS.findMathTransform(sourceCRS, targetCRS, true);
+    	        
+    	        GeometryFactory geometryFactory = JTSFactoryFinder.getGeometryFactory(null);
+    	        com.vividsolutions.jts.geom.Point sourceGeometry = geometryFactory.createPoint(new Coordinate(lon, lat));
+    	        com.vividsolutions.jts.geom.Point targetGeometry = (com.vividsolutions.jts.geom.Point) JTS.transform(sourceGeometry, transform);
+    	        
+    	        double X0 = -20037508;
+    	        double Y0 = 20037508;
+    	        
+    	        double X = targetGeometry.getY();
+    	        double Y = targetGeometry.getX();
+    	        
+    	        double d = 256 * MapPanel.RES[zoom];
+    	        double dx = X - X0;
+    	        double dy = Y0 - Y;
+    	        
+    	        int TILECOL = (int)(dx / d);
+    	        int TILEROW = (int)(dy / d);
+    	        
+    	        // System.out.println(zoom + "-" + TILECOL + "-" + TILEROW);
+    	        String url = tileServer.getURL() + "TILEMATRIX=" + zoom + "&TILEROW=" + TILEROW + "&TILECOL=" + TILECOL;
+    	        // System.out.println(zoom + "-" + MapPanel.RES[zoom]);
+    	        return url;
+    	        
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	            return null;
+	        }
+	        
+	        
+	    } else {
+	        String number = ("" + zoom + "/" + xtile + "/" + ytile);
+	        // String url = tileServer.getURL() + number + ".png";
+	        // System.out.println(zoom + "," + xtile);
+	        zoom = 18;
+	        xtile = 90241;
+	        String url = tileServer.getURL() + "TILEMATRIX=" + zoom + "&TILEROW=" + xtile + "&TILECOL=132877";
+	        System.err.println(url);
+	        return url;
+	    }
 	}
 
 	//-------------------------------------------------------------------------
@@ -244,6 +310,29 @@ public class MapPanel extends JPanel {
 
 	public MapPanel() {
 		this(new Point(8282, 5179), 6);
+		
+		RES[0] = 156543.0339280410;
+		RES[1] = 78271.5169640205;
+	    RES[2] =  39135.7584820102;
+	    RES[3] =  19567.8792410051;
+	    RES[4] =  9783.9396205026;
+	    RES[5] =  4891.9698102513;
+	    RES[6] =  2445.9849051256;
+	    RES[7] =  1222.9924525628;
+	    RES[8] =  611.4962262814;
+	    RES[9] =  305.7481131407;
+	    RES[10] = 152.8740565704;
+	    RES[11] = 76.4370282852;
+	    RES[12] = 38.2185141426;
+	    RES[13] = 19.1092570713;
+	    RES[14] = 9.5546285356;
+	    RES[15] = 4.7773142678;
+	    RES[16] = 2.3886571339;
+	    RES[17] = 1.1943285670;
+	    RES[18] = 0.5971642835;
+	    RES[19] = 0.2985821417;
+	    RES[20] = 0.1492910709;
+	    RES[21] = 0.0746455354;
 	}
 
 	public MapPanel(Point mapPosition, int zoom) {
@@ -282,8 +371,8 @@ public class MapPanel extends JPanel {
 	}
 
 	private void checkTileServers() {
-		for (TileServer tileServer : TILESERVERS) {
-			String urlstring = getTileString(tileServer, 1, 1, 1);
+		/*for (TileServer tileServer : TILESERVERS) {
+			String urlstring = getTileString(tileServer, 1, 1, 1, null);
 			try {
 				URL url = new URL(urlstring);
 				@SuppressWarnings("unused")
@@ -293,7 +382,7 @@ public class MapPanel extends JPanel {
 				log.log(Level.SEVERE, "failed to get content from url " + urlstring);
 				tileServer.setBroken(true);
 			}
-		}
+		}*/
 	}
 
 	private void checkActiveTileServer() {
@@ -579,9 +668,13 @@ public class MapPanel extends JPanel {
 				int y1 = (int) Math.ceil(((double) mapPosition.y + height) / TILE_SIZE);
 
 				int dy = y0 * TILE_SIZE - mapPosition.y;
+				//System.out.println("-------------------");
 				for (int y = y0; y < y1; ++y) {
 					int dx = x0 * TILE_SIZE - mapPosition.x;
 					for (int x = x0; x < x1; ++x) {
+					    
+					    //Point.Double d = mapPanel.getLongitudeLatitude(new Point((x*TILE_SIZE),(y*TILE_SIZE)));
+					    //System.out.println(d.getX() + "," + d.getY());
 						paintTile(g, dx, dy, x, y);
 						dx += TILE_SIZE;
 						++mapPanel.getStats().tileCount;
@@ -617,7 +710,8 @@ public class MapPanel extends JPanel {
 				TileServer tileServer = mapPanel.getTileServer();
 				Image image = cache.get(tileServer, x, y, zoom);
 				if (image == null) {
-					final String url = getTileString(tileServer, x, y, zoom);
+				    Point.Double d = mapPanel.getLongitudeLatitude(new Point((x*TILE_SIZE),(y*TILE_SIZE)));
+				    final String url = getTileString(tileServer, x, y, zoom, d);
 					try {
 						//System.err.println("loading: " + url);
 						image = Toolkit.getDefaultToolkit().getImage(new URL(url));
@@ -738,7 +832,8 @@ public class MapPanel extends JPanel {
 	public static String getTileNumber(TileServer tileServer, double lat, double lon, int zoom) {
 		int xtile = (int) Math.floor((lon + 180) / 360 * (1 << zoom));
 		int ytile = (int) Math.floor((1 - Math.log(Math.tan(Math.toRadians(lat)) + 1 / Math.cos(Math.toRadians(lat))) / Math.PI) / 2 * (1 << zoom));
-		return getTileString(tileServer, xtile, ytile, zoom);
+		System.out.println("?");
+		return getTileString(tileServer, xtile, ytile, zoom, null);
 	}
 
 

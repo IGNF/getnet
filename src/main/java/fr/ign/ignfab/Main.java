@@ -34,6 +34,7 @@ import javax.swing.UnsupportedLookAndFeelException;
 
 import fr.ign.ignfab.bdtopo.RouteWFS;
 import fr.ign.ignfab.gui.MapPanel;
+import fr.ign.ignfab.gui.SettingsPanel;
 
 /**
  * 
@@ -48,7 +49,7 @@ public class Main {
 	private static Point finalPosition;
 	private static String key = "";
 
-	private static final double tolerance = 0.001;
+	private static double tolerance = 0.001;
 
 	private static ArrayList<String> EPSG = null;
 
@@ -117,10 +118,14 @@ public class Main {
 
 			} catch (FileNotFoundException e1) {
 
-				String question = "Input Geoportail key: ";
-
-				key = JOptionPane.showInputDialog(null, question, "Key", JOptionPane.QUESTION_MESSAGE);
-
+			    SettingsPanel settingsPanel = new SettingsPanel();
+			    JOptionPane.showMessageDialog(null, settingsPanel, "Settings", JOptionPane.YES_NO_CANCEL_OPTION);
+			  
+			    key = settingsPanel.getKey();
+			    if (settingsPanel.getDistance() != null && !settingsPanel.getDistance().equals("")) {
+			      tolerance = Double.parseDouble(settingsPanel.getDistance());
+			    }
+			    // TODO proxy
 			}
 
 		}
@@ -133,8 +138,8 @@ public class Main {
 		final JFrame fen = new JFrame();
 		fen.setSize(600, 600);
 
-
-		final MapPanel mapPanel = new MapPanel(); // just a JPanel extension, add to any swing/awt container
+		// just a JPanel extension, add to any swing/awt container
+		final MapPanel mapPanel = new MapPanel(); 
 
 		fen.setContentPane(mapPanel);
 		fen.setLocationRelativeTo(null);
@@ -463,7 +468,7 @@ public class Main {
 		double Delta_x = R*Math.abs(xmax-xmin)*Math.PI/180*coeff;
 		double Delta_y = R*Math.abs(ymax-ymin)*Math.PI/180;
 
-		if ((Delta_x < 1000) || (Delta_y < 1000)){
+		if ((Delta_x < 1000) || (Delta_y < 1000)) {
 
 
 		}

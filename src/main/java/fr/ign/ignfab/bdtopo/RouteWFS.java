@@ -41,7 +41,6 @@ import fr.ign.cogit.geoxygene.feature.DefaultFeature;
 import fr.ign.cogit.geoxygene.feature.FT_FeatureCollection;
 import fr.ign.cogit.geoxygene.spatial.coordgeom.GM_LineString;
 import fr.ign.cogit.geoxygene.util.conversion.JtsGeOxygene;
-import fr.ign.ignfab.test.Test;
 import fr.ign.ignfab.util.SimpleHttpClient;
 import fr.ign.ignfab.cartetopo.ChargeurCarteTopo;
 
@@ -97,11 +96,12 @@ public class RouteWFS {
 
 		try {
 			SimpleHttpClient client = new SimpleHttpClient(urlService);
-			if (Test.PROXY) {
+			// TODO
+			//if (Test.PROXY) {
 				client.connectProxyIGN("GET", "application/json");
-			} else {
+			/*} else {
 				client.connect("GET");
-			}
+			}*/
 
 			String response = client.getResponse();
 			System.out.println(response);
@@ -140,13 +140,13 @@ public class RouteWFS {
 		int nbRoute = getNbRouteEmprise(bbox);
 		int nbiter = nbRoute / NB_PER_PAGE + 1;
 		
-		Test.progressPercentageConsole(0, nbiter);
+		progressPercentageConsole(0, nbiter);
 	
 		int offset = 0;
 		
 		for (int j = 0; j < nbiter; j++) {
 
-			Test.progressPercentageConsole(j, nbiter);
+			progressPercentageConsole(j, nbiter);
 			
 			final int percent = (int)(j*100.0/nbiter);
 			
@@ -177,7 +177,7 @@ public class RouteWFS {
 			offset = offset + NB_PER_PAGE;
 		}
 
-		Test.progressPercentageConsole(nbiter, nbiter);
+		progressPercentageConsole(nbiter, nbiter);
 
 		return bdRoute;
 
@@ -453,6 +453,40 @@ public class RouteWFS {
 
         return out;
 
+
+    }
+	
+	
+	// -----------------------------------------------------------------------------
+    // Method to create a progress bar
+    // -----------------------------------------------------------------------------
+    public static void progressPercentageConsole(int remain, int total) {
+
+        if (remain > total) {
+            throw new IllegalArgumentException();
+        }
+
+        int remainProcent =(int) (((double) remain / (double) total) * 65);
+
+        char defaultChar = '-';
+        String icon = "*";
+        String bare = new String(new char[65]).replace('\0', defaultChar) + "]";
+
+        StringBuilder bareDone = new StringBuilder();
+        bareDone.append("[");
+
+        for (int i = 0; i < remainProcent; i++) {
+
+            bareDone.append(icon);
+
+        }
+
+        String bareRemain = bare.substring(remainProcent, bare.length());
+        System.out.print("\r" + bareDone + bareRemain + " " + remainProcent*100/65 + " %");
+
+        if (remain == total) {
+            System.out.print("\n");
+        }
 
     }
 	
