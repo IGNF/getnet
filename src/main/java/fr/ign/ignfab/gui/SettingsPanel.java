@@ -35,7 +35,7 @@ public class SettingsPanel extends JPanel implements ActionListener {
   /**
    * Default constructor.
    */
-  public SettingsPanel() {
+  public SettingsPanel(String key, boolean hasProxy, String proxyHost, String proxyPort) {
     
     FormLayout layout = new FormLayout(
         "4dlu, pref, 4dlu, pref, 4dlu, pref, pref, 4dlu",
@@ -47,6 +47,7 @@ public class SettingsPanel extends JPanel implements ActionListener {
     //   Geoportail key. 
     add(new JLabel("Input Geoportail key: ", SwingConstants.RIGHT), cc.xy(2, 2));
     keyField = new JTextField(30);
+    keyField.setText(key);
     add(keyField, cc.xyw(4, 2, 4));
     
     
@@ -57,7 +58,6 @@ public class SettingsPanel extends JPanel implements ActionListener {
     noButton = new JRadioButton("No");
     noButton.setMnemonic(KeyEvent.VK_B);
     noButton.setActionCommand("No");
-    noButton.setSelected(true);
     noButton.addActionListener(this);
     
     yesButton = new JRadioButton("Yes");
@@ -76,13 +76,23 @@ public class SettingsPanel extends JPanel implements ActionListener {
     
     add(new JLabel("Host: ", SwingConstants.RIGHT), cc.xy(6, 5));
     proxyHostField = new JTextField(20);
-    proxyHostField.setEnabled(false);
+    proxyHostField.setText(proxyHost);
     add(proxyHostField, cc.xy(7, 5));
     
     add(new JLabel("Port: ", SwingConstants.RIGHT), cc.xy(6, 6));
     proxyPortField = new JTextField(5);
-    proxyPortField.setEnabled(false);
+    proxyPortField.setText(proxyPort);
     add(proxyPortField, cc.xy(7, 6));
+    
+    if (hasProxy) {
+      yesButton.setSelected(true);
+      proxyHostField.setEnabled(true);
+      proxyPortField.setEnabled(true);
+    } else {
+      noButton.setSelected(true);
+      proxyHostField.setEnabled(false);
+      proxyPortField.setEnabled(false);
+    }
     
     // =========================================================================
     //   Distance.
@@ -111,6 +121,23 @@ public class SettingsPanel extends JPanel implements ActionListener {
   
   public String getKey() {
     return this.keyField.getText();
+  }
+  
+  
+  public Boolean hasProxy() {
+    if (yesButton.isSelected()) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+  
+  public String getProxyHost() {
+    return proxyHostField.getText();
+  }
+  
+  public String getProxyPort() {
+    return proxyPortField.getText();
   }
   
   

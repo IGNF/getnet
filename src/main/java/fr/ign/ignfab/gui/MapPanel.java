@@ -20,7 +20,6 @@ import java.awt.Composite;
 import java.awt.Container;
 import java.awt.Cursor;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -34,25 +33,15 @@ import java.awt.Stroke;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
-import java.awt.event.InputEvent;
-import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.awt.geom.AffineTransform;
-import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.beans.PropertyChangeListener;
-import java.io.StringReader;
 import java.net.URL;
-import java.net.URLEncoder;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.logging.Level;
@@ -61,46 +50,24 @@ import java.util.logging.Logger;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
-import javax.swing.ButtonGroup;
-import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
-import javax.swing.JCheckBoxMenuItem;
-import javax.swing.JComboBox;
 import javax.swing.JComponent;
-import javax.swing.JEditorPane;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextField;
-import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
-import javax.swing.UIManager;
-import javax.swing.event.HyperlinkEvent;
-import javax.swing.event.HyperlinkListener;
-import javax.swing.text.html.HTMLDocument;
-import javax.swing.text.html.HTMLEditorKit;
-import javax.swing.text.html.StyleSheet;
-import javax.xml.parsers.SAXParserFactory;
 
 import org.geotools.geometry.jts.JTS;
 import org.geotools.geometry.jts.JTSFactoryFinder;
 import org.geotools.referencing.CRS;
-import org.opengis.referencing.crs.CRSFactory;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.opengis.referencing.operation.MathTransform;
-import org.xml.sax.Attributes;
-import org.xml.sax.SAXException;
-import org.xml.sax.helpers.DefaultHandler;
 
 import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
+
+import fr.ign.ignfab.bdtopo.PyramideFondOrtho;
 
 
 /**
@@ -149,7 +116,6 @@ public class MapPanel extends JPanel {
 
 	private static final Logger log = Logger.getLogger(MapPanel.class.getName());
 
-
 	public int xrect = 0;
 	public int yrect = 0;
 	public int wrect = 0;
@@ -158,14 +124,15 @@ public class MapPanel extends JPanel {
 
 	public static double[] RES = new double[22];
 	
+	private boolean hasProxy = false;
+	
+	private PyramideFondOrtho pyramideFondOrtho;
 	
 	public static final class TileServer {
 		private final String url;
 		private final int maxZoom;
 		private boolean broken;
 
-		
-		
 		private TileServer(String url, int maxZoom) {
 			this.url = url;
 			this.maxZoom = maxZoom;
@@ -191,40 +158,17 @@ public class MapPanel extends JPanel {
 		}
 	}
 	
-	
-	// private static String LAYER = "GEOGRAPHICALGRIDSYSTEMS.MAPS";
-    // private static String LAYER = "GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-EXPRESS.ROUTIER";
-    // private static String LAYER = "GEOGRAPHICALGRIDSYSTEMS.PLANIGN";
-    // private static String LAYER = "ORTHOIMAGERY.ORTHOPHOTOS";
-
 	/* constants ... */
-	private static final TileServer[] TILESERVERS = {
-        new TileServer("https://wxs.ign.fr/PRATIQUE/geoportail/wmts?LAYER=ORTHOIMAGERY.ORTHOPHOTOS&"
-                + "EXCEPTIONS=text/xml&FORMAT=image/jpeg&SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&STYLE=normal&TILEMATRIXSET=PM&", 21)
-	};
+	private static TileServer[] TILESERVERS = null;
 
-	private static final String NAMEFINDER_URL = "http://gazetteer.openstreetmap.org/namefinder/search.xml";
 	private static final int PREFERRED_WIDTH = 320;
 	private static final int PREFERRED_HEIGHT = 200;
 
-
 	private static final int ANIMATION_FPS = 15, ANIMATION_DURARTION_MS = 500;
-
-
 
 	/* basically not be changed */
 	private static final int TILE_SIZE = 256;
 	private static final int CACHE_SIZE = 256;
-	private static final String ABOUT_MSG =
-			"MapPanel - Minimal Openstreetmap/Maptile Viewer\r\n" +
-					"Web: http://mappanel.sourceforge.net\r\n" +
-					"Written by stepan.rutz. Contact stepan.rutz@gmx.de\r\n\r\n" +
-					"Tileserver-URLs: " + Arrays.toString(TILESERVERS) + "\r\n" +
-					"Namefinder-URL: " + NAMEFINDER_URL + "\r\n" +
-					"Tileserver and Namefinder are part of Openstreetmap or associated projects.\r\n\r\n" +
-					"MapPanel gets its data from these servers.\r\n\r\n" +
-					"Please visit and support the actual projects at http://www.openstreetmap.org/.\r\n" +
-					"And keep in mind this application is just a simple alternative renderer for swing.\r\n";
 
 	private static final int MAGNIFIER_SIZE = 100;
 
@@ -232,12 +176,11 @@ public class MapPanel extends JPanel {
 	// tile url construction.
 	// change here to support some other tile
 
-	public static String getTileString(TileServer tileServer, int xtile, int ytile, int zoom, Point.Double position) {
+	public static String getTileString(MapPanel mapPanel, TileServer tileServer, int xtile, int ytile, int zoom, Point.Double position) {
 	    if (position != null) {
 	        try {
     	        double lon = position.getX();
     	        double lat = position.getY();
-    	        // System.out.println(lon + "," + lat);
     	        
     	        // Change to Web Mercator
     	        CoordinateReferenceSystem sourceCRS = CRS.decode("EPSG:4326");
@@ -245,14 +188,20 @@ public class MapPanel extends JPanel {
     	        MathTransform transform = CRS.findMathTransform(sourceCRS, targetCRS, true);
     	        
     	        GeometryFactory geometryFactory = JTSFactoryFinder.getGeometryFactory(null);
-    	        com.vividsolutions.jts.geom.Point sourceGeometry = geometryFactory.createPoint(new Coordinate(lon, lat));
+    	        com.vividsolutions.jts.geom.Point sourceGeometry = geometryFactory.createPoint(new Coordinate(lat, lon));
     	        com.vividsolutions.jts.geom.Point targetGeometry = (com.vividsolutions.jts.geom.Point) JTS.transform(sourceGeometry, transform);
     	        
+    	        // 
+    	        int[] coord = mapPanel.pyramideFondOrtho.getTopLeftCorner(Integer.toString(zoom));
     	        double X0 = -20037508;
-    	        double Y0 = 20037508;
+                double Y0 = 20037508;
+    	        if (coord != null) {
+    	            X0 = coord[0];
+                    Y0 = coord[1];
+    	        } 
     	        
-    	        double X = targetGeometry.getY();
-    	        double Y = targetGeometry.getX();
+    	        double X = targetGeometry.getX();
+    	        double Y = targetGeometry.getY();
     	        
     	        double d = 256 * MapPanel.RES[zoom];
     	        double dx = X - X0;
@@ -261,9 +210,7 @@ public class MapPanel extends JPanel {
     	        int TILECOL = (int)(dx / d);
     	        int TILEROW = (int)(dy / d);
     	        
-    	        // System.out.println(zoom + "-" + TILECOL + "-" + TILEROW);
     	        String url = tileServer.getURL() + "TILEMATRIX=" + zoom + "&TILEROW=" + TILEROW + "&TILECOL=" + TILECOL;
-    	        // System.out.println(zoom + "-" + MapPanel.RES[zoom]);
     	        return url;
     	        
 	        } catch (Exception e) {
@@ -273,10 +220,9 @@ public class MapPanel extends JPanel {
 	        
 	        
 	    } else {
-	        String number = ("" + zoom + "/" + xtile + "/" + ytile);
+	        // String number = ("" + zoom + "/" + xtile + "/" + ytile);
 	        // String url = tileServer.getURL() + number + ".png";
-	        // System.out.println(zoom + "," + xtile);
-	        zoom = 18;
+	        zoom = 18; 
 	        xtile = 90241;
 	        String url = tileServer.getURL() + "TILEMATRIX=" + zoom + "&TILEROW=" + xtile + "&TILECOL=132877";
 	        System.err.println(url);
@@ -291,7 +237,7 @@ public class MapPanel extends JPanel {
 	private Point mapPosition = new Point(0, 0);
 	private int zoom;
 
-	private TileServer tileServer = TILESERVERS[0];
+	private TileServer tileServer = null;
 
 	private DragListener mouseListener = new DragListener();
 	private TileCache cache = new TileCache();
@@ -305,12 +251,60 @@ public class MapPanel extends JPanel {
 	protected double smoothScale = 1.0D;
 	private int smoothOffset = 0;
 	private Point smoothPosition, smoothPivot;
-	private SearchPanel searchPanel;
 	private Rectangle magnifyRegion;
 
-	public MapPanel() {
-		this(new Point(8282, 5179), 6);
+	public MapPanel(String key, boolean hasProxy, String proxyHost, String proxyPort) {
 		
+		this.hasProxy = hasProxy;
+		
+		//    private static String LAYER = "GEOGRAPHICALGRIDSYSTEMS.MAPS";
+	    //    private static String LAYER = "GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-EXPRESS.ROUTIER";
+	    //    private static String LAYER = "GEOGRAPHICALGRIDSYSTEMS.PLANIGN";
+	    //    private static String LAYER = "ORTHOIMAGERY.ORTHOPHOTOS";
+
+		TILESERVERS = new TileServer[1];
+	    TILESERVERS[0] = new TileServer("http://wxs.ign.fr/" + key + "/geoportail/wmts?LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGN&"
+	                + "EXCEPTIONS=text/xml&FORMAT=image/jpeg&SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&STYLE=normal&TILEMATRIXSET=PM&", 21);
+	    tileServer = TILESERVERS[0];
+	    
+	    pyramideFondOrtho = new PyramideFondOrtho();
+	    this.pyramideFondOrtho.getTileMatrix(key);
+	    
+	    Point mapPosition = new Point(8282, 5179); 
+	    int zoom = 6;
+	    
+	    try {
+            // disable animation on windows7 for now
+            useAnimations = !("Windows Vista".equals(System.getProperty("os.name")) && "6.1".equals(System.getProperty("os.version")));
+        } catch (Exception e) {
+            // be defensive here
+            log.log(Level.INFO, "failed to check for win7", e);
+        }
+
+      setLayout(new MapLayout());
+      setOpaque(true);
+      setBackground(new Color(0xc0, 0xc0, 0xc0));
+      add(overlayPanel);
+      add(controlPanel);
+      addMouseListener(mouseListener);
+      addMouseMotionListener(mouseListener);
+      addMouseWheelListener(mouseListener);
+      //add(slider);
+      setZoom(zoom);
+      setMapPosition(mapPosition);
+      //        if (false) {
+      //            SwingUtilities.invokeLater(new Runnable() {
+      //                public void run() {
+      //                    setZoom(10);
+      //                    setCenterPosition(computePosition(new Point2D.Double(-0.11, 51.51)));
+      //                }
+      //            });
+      //        }
+
+      // searchPanel = new SearchPanel();
+      checkTileServers();
+      checkActiveTileServer();
+	    
 		RES[0] = 156543.0339280410;
 		RES[1] = 78271.5169640205;
 	    RES[2] =  39135.7584820102;
@@ -335,40 +329,7 @@ public class MapPanel extends JPanel {
 	    RES[21] = 0.0746455354;
 	}
 
-	public MapPanel(Point mapPosition, int zoom) {
-
-		try {
-			// disable animation on windows7 for now
-			useAnimations = !("Windows Vista".equals(System.getProperty("os.name")) && "6.1".equals(System.getProperty("os.version")));
-		} catch (Exception e) {
-			// be defensive here
-			log.log(Level.INFO, "failed to check for win7", e);
-		}
-
-		setLayout(new MapLayout());
-		setOpaque(true);
-		setBackground(new Color(0xc0, 0xc0, 0xc0));
-		add(overlayPanel);
-		add(controlPanel);
-		addMouseListener(mouseListener);
-		addMouseMotionListener(mouseListener);
-		addMouseWheelListener(mouseListener);
-		//add(slider);
-		setZoom(zoom);
-		setMapPosition(mapPosition);
-		//        if (false) {
-		//            SwingUtilities.invokeLater(new Runnable() {
-		//                public void run() {
-		//                    setZoom(10);
-		//                    setCenterPosition(computePosition(new Point2D.Double(-0.11, 51.51)));
-		//                }
-		//            });
-		//        }
-
-		searchPanel = new SearchPanel();
-		checkTileServers();
-		checkActiveTileServer();
-	}
+	
 
 	private void checkTileServers() {
 		/*for (TileServer tileServer : TILESERVERS) {
@@ -435,9 +396,9 @@ public class MapPanel extends JPanel {
 		return controlPanel;
 	}
 
-	public SearchPanel getSearchPanel() {
-		return searchPanel;
-	}
+//	public SearchPanel getSearchPanel() {
+//		return searchPanel;
+//	}
 
 	public TileCache getCache() {
 		return cache;
@@ -668,13 +629,9 @@ public class MapPanel extends JPanel {
 				int y1 = (int) Math.ceil(((double) mapPosition.y + height) / TILE_SIZE);
 
 				int dy = y0 * TILE_SIZE - mapPosition.y;
-				//System.out.println("-------------------");
 				for (int y = y0; y < y1; ++y) {
 					int dx = x0 * TILE_SIZE - mapPosition.x;
 					for (int x = x0; x < x1; ++x) {
-					    
-					    //Point.Double d = mapPanel.getLongitudeLatitude(new Point((x*TILE_SIZE),(y*TILE_SIZE)));
-					    //System.out.println(d.getX() + "," + d.getY());
 						paintTile(g, dx, dy, x, y);
 						dx += TILE_SIZE;
 						++mapPanel.getStats().tileCount;
@@ -711,12 +668,22 @@ public class MapPanel extends JPanel {
 				Image image = cache.get(tileServer, x, y, zoom);
 				if (image == null) {
 				    Point.Double d = mapPanel.getLongitudeLatitude(new Point((x*TILE_SIZE),(y*TILE_SIZE)));
-				    final String url = getTileString(tileServer, x, y, zoom, d);
+				    final String urlAddress = getTileString(mapPanel, mapPanel.tileServer, x, y, zoom, d);
 					try {
-						//System.err.println("loading: " + url);
-						image = Toolkit.getDefaultToolkit().getImage(new URL(url));
+						// System.err.println("loading: " + url);
+					    if (mapPanel.hasProxy) {
+					      
+					      // System.setProperty("http.proxyHost", "proxy.ign.fr");
+					      // System.setProperty("http.proxyPort", "3128");
+					      // System.setProperty("http.proxyHost", "");
+					      // System.setProperty("http.proxyPort", "");
+					    }
+					    URL url = new URL(urlAddress);
+					    image = Toolkit.getDefaultToolkit().getImage(url);
+					  
+						
 					} catch (Exception e) {
-						log.log(Level.SEVERE, "failed to load url \"" + url + "\"", e);
+						log.log(Level.SEVERE, "failed to load url \"" + urlAddress + "\"", e);
 					}
 					if (image != null)
 						cache.put(tileServer, x, y, zoom, image);
@@ -829,12 +796,11 @@ public class MapPanel extends JPanel {
 		return (int) Math.floor((1 - Math.log(Math.tan(Math.toRadians(lat)) + 1 / Math.cos(Math.toRadians(lat))) / Math.PI) / 2 * ymax);
 	}
 
-	public static String getTileNumber(TileServer tileServer, double lat, double lon, int zoom) {
-		int xtile = (int) Math.floor((lon + 180) / 360 * (1 << zoom));
-		int ytile = (int) Math.floor((1 - Math.log(Math.tan(Math.toRadians(lat)) + 1 / Math.cos(Math.toRadians(lat))) / Math.PI) / 2 * (1 << zoom));
-		System.out.println("?");
-		return getTileString(tileServer, xtile, ytile, zoom, null);
-	}
+//	public static String getTileNumber(TileServer tileServer, double lat, double lon, int zoom) {
+//		int xtile = (int) Math.floor((lon + 180) / 360 * (1 << zoom));
+//		int ytile = (int) Math.floor((1 - Math.log(Math.tan(Math.toRadians(lat)) + 1 / Math.cos(Math.toRadians(lat))) / Math.PI) / 2 * (1 << zoom));
+//		return getTileString(tileServer, xtile, ytile, zoom, null);
+//	}
 
 
 
@@ -1535,513 +1501,18 @@ public class MapPanel extends JPanel {
 		}
 	}
 
-	private static final class EditorPane extends JEditorPane {
+	
 
-		private final Font font = new JLabel().getFont(); //new Font(Font.DIALOG, Font.PLAIN, 12);
-		private final String stylesheet =
-				"body { color:#808080; margin-top:0; margin-left:0; margin-bottom:0; margin-right:0; font-family:" + font.getName() + "; font-size:" + font.getSize()+ "pt;}" +
-						"a    { color:#4040D9; margin-top:0; margin-left:0; margin-bottom:0; margin-right:0; font-family:" + font.getName() + "; font-size:" + font.getSize() + "pt;}";
+	
 
-		public EditorPane() {
-			super("text/html", "");
-			setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
-
-			HTMLEditorKit kit = new HTMLEditorKit();
-			setEditorKit(kit);
-			setEditable(false);
-			setOpaque(false);
-			HTMLDocument htmlDocument = (HTMLDocument)getDocument();
-			StyleSheet sheet = new StyleSheet();
-			try {
-				sheet.loadRules(new StringReader(stylesheet), null);
-				htmlDocument.getStyleSheet().addStyleSheet(sheet);
-			} catch (Exception e) {
-			}
-			htmlDocument.setAsynchronousLoadPriority(-1);
-		}
-
-	}
-
-	public static final class SearchResult {
-		private String type;
-		private double lat, lon;
-		private String name;
-		private String category;
-		private String info;
-		private int zoom;
-		private String description = "";
-
-		public SearchResult() {
-		}
-		public String getType() {
-			return type;
-		}
-		public void setType(String type) {
-			this.type = type;
-		}
-		public double getLat() {
-			return lat;
-		}
-		public void setLat(double lat) {
-			this.lat = lat;
-		}
-		public double getLon() {
-			return lon;
-		}
-		public void setLon(double lon) {
-			this.lon = lon;
-		}
-		public String getName() {
-			return name;
-		}
-		public void setName(String name) {
-			this.name = name;
-		}
-		public String getCategory() {
-			return category;
-		}
-		public void setCategory(String category) {
-			this.category = category;
-		}
-		public String getInfo() {
-			return info;
-		}
-		public void setInfo(String info) {
-			this.info = info;
-		}
-		public int getZoom() {
-			return zoom;
-		}
-		public void setZoom(int zoom) {
-			this.zoom = zoom;
-		}
-		public String getDescription() {
-			return description;
-		}
-		public void setDescription(String description) {
-			this.description = description;
-		}
-		public String toString() {
-			return "SearchResult [category=" + category + ", info=" + info + ", lat=" + lat + ", lon=" + lon
-					+ ", name=" + name + ", type=" + type + ", zoom=" + zoom + ", description=" + description + "]";
-		}
-
-	}
-
-	public final class SearchPanel extends JPanel {
-
-		private EditorPane editorPane = new EditorPane();
-		@SuppressWarnings("rawtypes")
-		private JComboBox searchBox = new JComboBox();
-
-		private String oldSearch = "";
-		private ArrayList<SearchResult> results = new ArrayList<SearchResult>();
-		private boolean searching;
-
-		public SearchPanel() {
-			super(new BorderLayout(8, 8));
-			setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
-			setBackground(Color.white);
-			JPanel topPanel = new JPanel(new BorderLayout(4, 4));
-			topPanel.setOpaque(false);
-			topPanel.add(new JLabel("Find:"), BorderLayout.WEST);
-			topPanel.add(searchBox, BorderLayout.CENTER);
-			add(topPanel, BorderLayout.NORTH);
-			JScrollPane scrollPane = new JScrollPane(editorPane);
-			scrollPane.setViewportBorder(BorderFactory.createEmptyBorder());
-			scrollPane.setBorder(BorderFactory.createEmptyBorder());
-			scrollPane.getViewport().setBackground(Color.WHITE);
-			add(scrollPane, BorderLayout.CENTER);
-			searchBox.setEditable(true);
-			Component editorComponent = searchBox.getEditor().getEditorComponent();
-			searchBox.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-
-					doSearch(searchBox.getSelectedItem());
-				}
-
-			});
-			if (editorComponent instanceof JTextField) {
-				final JTextField textField = (JTextField) editorComponent;
-				textField.addFocusListener(new FocusAdapter() {
-					public void focusGained(FocusEvent e) {
-						textField.selectAll();
-					}
-				});
-			}
-			editorPane.addHyperlinkListener(new HyperlinkListener() {
-				public void hyperlinkUpdate(HyperlinkEvent e) {
-					if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
-						String s = e.getDescription();
-						int index = Integer.valueOf(s);
-						SearchResult result = results.get(index);
-						MapPanel.this.setZoom(result.getZoom() < 1 || result.getZoom() > getTileServer().getMaxZoom() ? 8 : result.getZoom());
-						Point position = MapPanel.this.computePosition(new Point2D.Double(result.getLon(), result.getLat()));
-						MapPanel.this.setCenterPosition(position);
-						MapPanel.this.repaint();
-					}
-				}
-			});
-		}
-
-		public void doSearch(Object selectedItem) {
-			if (searching)
-				return;
-			final String newSearch = selectedItem == null ? "" : selectedItem.toString();
-			if (oldSearch.equals(newSearch))
-				return;
-			oldSearch = newSearch;
-			Runnable r = new Runnable() {
-				public void run() {
-					doSearchInternal(newSearch);
-				}
-			};
-			searching = true;
-			searchBox.setEnabled(false);
-			editorPane.setText("<html><body><i>searching...</i></body></html>");
-			searchBox.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-			editorPane.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-
-			Thread t = new Thread(r, "searcher "+ newSearch);
-			t.start();
-		}
-
-		private void doSearchInternal(final String newSearch) {
-			results.clear();
-			try {
-				// Create a URL for the desired page
-				String args = URLEncoder.encode(newSearch, "UTF-8");
-				String path = NAMEFINDER_URL + "?find= " + args;
-				SAXParserFactory factory = SAXParserFactory.newInstance();
-				factory.setValidating(false);
-				factory.newSAXParser().parse(path, new DefaultHandler() {
-					private final ArrayList<String> pathStack = new ArrayList<String>();
-					private final ArrayList<SearchResult> namedStack = new ArrayList<SearchResult>();
-					private StringBuilder chars;
-					@SuppressWarnings("unused")
-					public void startElement(String uri, String localName, String qName, Attributes attributes) {
-						pathStack.add(qName);
-						String path = getPath();
-						if ("named".equals(qName)) {
-							SearchResult result = new SearchResult();
-							result.setType(attributes.getValue("type"));
-							result.setLat(tryDouble(attributes.getValue("lat")));
-							result.setLon(tryDouble(attributes.getValue("lon")));
-							result.setName(attributes.getValue("name"));
-							result.setCategory(attributes.getValue("category"));
-							result.setInfo(attributes.getValue("info"));
-							result.setZoom(tryInteger(attributes.getValue("zoom")));
-							namedStack.add(result);
-							if (pathStack.size() == 2)
-								results.add(result);
-						} else if ("description".equals(qName)) {
-							chars = new StringBuilder();
-						}
-					}
-					public void endElement(String uri, String localName, String qName) throws SAXException {
-						if ("named".equals(qName)) {
-							namedStack.remove(namedStack.size() - 1);
-						} else if ("description".equals(qName)) {
-							namedStack.get(namedStack.size() - 1).setDescription(chars.toString());
-						}
-						pathStack.remove(pathStack.size() - 1);
-					}
-					public void characters(char[] ch, int start, int length) throws SAXException {
-						if(chars != null)
-							chars.append(ch, start, length);
-					}
-					private String getPath() {
-						StringBuilder sb = new StringBuilder();
-						for (String p : pathStack)
-							sb.append("/").append(p);
-						return sb.toString();
-					}
-					private double tryDouble(String s) {
-						try {
-							return Double.valueOf(s);
-						} catch (Exception e) {
-							return 0d;
-						}
-					}
-					private int tryInteger(String s) {
-						try {
-							return Integer.valueOf(s);
-						} catch (Exception e) {
-							return 0;
-						}
-					}
-				});
-			} catch (Exception e) {
-				log.log(Level.SEVERE, "failed to search for \"" + newSearch + "\"", e);
-			}
-
-			StringBuilder html = new StringBuilder();
-			html.append("<html><body>\r\n");
-			for (int i = 0; i < results.size(); ++i) {
-				SearchResult result = results.get(i);
-				String description = result.getDescription();
-				description = description.replaceAll("\\[.*?\\]", "");
-				String shortName = result.getName();
-				shortName = shortName.replaceAll("\\s(.*)$", "");
-				String linkBody = shortName + " [" + result.getCategory() + "]";
-				html.append("<a href='").append(i).append("'>").append(linkBody).append("</a><br>\r\n");
-				html.append("<i>").append(description).append("<br><br>\r\n");
-				//String description = result.getDescription() == null || result.getDescription().length() == 0 ? "-" : result.getDescription();
-				//html.append(description).append("<br><br>\r\n");
-			}
-			html.append("</body></html>\r\n");
-			final String html_ = html.toString();
-
-			Runnable r = new Runnable() {
-				@SuppressWarnings({ "rawtypes", "unchecked" })
-				public void run() {
-					try {
-						editorPane.setText(html_);
-						editorPane.setCaretPosition(0);
-						DefaultComboBoxModel comboBoxModel = (DefaultComboBoxModel)searchBox.getModel();
-						comboBoxModel.removeElement(newSearch);
-						comboBoxModel.addElement(newSearch);
-					} finally {
-						searchBox.setCursor(Cursor.getDefaultCursor());
-						editorPane.setCursor(Cursor.getDefaultCursor());
-						searching = false;
-						searchBox.setEnabled(true);
-					}
-				}
-			};
-			SwingUtilities.invokeLater(r);
-		}
-	}
-
-	public static final class Gui extends JPanel {
+//	public static MapPanel createMapPanel(Point mapPosition, int zoom) {
+//		MapPanel mapPanel = new MapPanel(mapPosition, zoom);
+//		mapPanel.getOverlayPanel().setVisible(false);
+//		((JComponent)mapPanel.getControlPanel()).setVisible(false);
+//		return mapPanel;
+//	}
 
 
-
-		private final MapPanel mapPanel;
-		private final CustomSplitPane customSplitPane = new CustomSplitPane(true);
-
-		public Gui() {
-			this(new MapPanel());
-		}
-
-		public Gui(MapPanel mapPanel) {
-			super(new BorderLayout());
-			this.mapPanel = mapPanel;
-			mapPanel.getOverlayPanel().setVisible(false);
-			mapPanel.setMinimumSize(new Dimension(1, 1));
-			mapPanel.getSearchPanel().setMinimumSize(new Dimension(1, 1));
-
-			customSplitPane.setSplit(.3);
-			customSplitPane.setComponentOne(mapPanel.getSearchPanel());
-			customSplitPane.setComponentTwo(mapPanel);
-			add(customSplitPane, BorderLayout.CENTER);
-		}
-
-		public CustomSplitPane getCustomSplitPane() {
-			return customSplitPane;
-		}
-
-		public MapPanel getMapPanel() {
-			return mapPanel;
-		}
-
-		public JMenuBar createMenuBar() {
-			JFrame frame = null;
-			if (SwingUtilities.getWindowAncestor(mapPanel) instanceof JFrame)
-				frame = (JFrame) SwingUtilities.getWindowAncestor(mapPanel);
-			final JFrame frame_ = frame;
-			JMenuBar menuBar = new JMenuBar();
-			{
-				JMenu fileMenu = new JMenu("File");
-				fileMenu.setMnemonic(KeyEvent.VK_F);
-				fileMenu.add(new AbstractAction() {
-					{
-						putValue(Action.NAME, "Exit");
-						putValue(Action.MNEMONIC_KEY, KeyEvent.VK_X);
-						setEnabled(frame_ != null);
-					}
-					public void actionPerformed(ActionEvent e) {
-						if (frame_ != null)
-							frame_.dispose();
-					}
-				});
-				menuBar.add(fileMenu);
-			}
-			{
-				JMenu viewMenu = new JMenu("View");
-				viewMenu.setMnemonic(KeyEvent.VK_V);
-
-				JCheckBoxMenuItem animations = new JCheckBoxMenuItem(new AbstractAction() {
-					{
-						putValue(Action.NAME, "Use Animations");
-						putValue(Action.MNEMONIC_KEY, KeyEvent.VK_A);
-					}
-					public void actionPerformed(ActionEvent e) {
-						mapPanel.setUseAnimations(!mapPanel.isUseAnimations());
-					}
-
-				});
-				animations.setSelected(true);
-				viewMenu.add(animations);
-				viewMenu.addSeparator();
-				viewMenu.add(new JCheckBoxMenuItem(new AbstractAction() {
-					JFrame floatFrame;
-					Container oldParent;
-					{
-						putValue(Action.NAME, "Float In a Frame");
-						putValue(Action.MNEMONIC_KEY, KeyEvent.VK_X);
-						setEnabled(frame_ == null);
-					}
-					public void actionPerformed(ActionEvent e) {
-						if (floatFrame == null) {
-							floatFrame = new JFrame("Floating MapPanel");
-							floatFrame.setBounds(100, 100, 800, 600);
-							floatFrame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
-							floatFrame.addWindowListener(new WindowAdapter() {
-								public void windowClosing(WindowEvent e) {
-									unfloat();
-								}
-							});
-						}
-						if (!floatFrame.isVisible()) {
-							oldParent = Gui.this.getParent();
-							floatFrame.getContentPane().add(Gui.this);
-							oldParent.validate();
-							oldParent.repaint();
-							floatFrame.validate();
-							floatFrame.setVisible(true);
-						} else if (floatFrame.isVisible()) {
-							unfloat();
-						}
-					}
-					private void unfloat() {
-						floatFrame.setVisible(false);
-						oldParent.add(Gui.this);
-						oldParent.validate();
-						oldParent.repaint();
-					}
-				}));
-				viewMenu.add(new JCheckBoxMenuItem(new AbstractAction() {
-					{
-						putValue(Action.NAME, "Show Infopanel");
-						putValue(Action.MNEMONIC_KEY, KeyEvent.VK_I);
-					}
-					public void actionPerformed(ActionEvent e) {
-						mapPanel.getOverlayPanel().setVisible(!mapPanel.getOverlayPanel().isVisible());
-					}
-
-				}));
-				JCheckBoxMenuItem controlPanelMenuItem = new JCheckBoxMenuItem(new AbstractAction() {
-					{
-						putValue(Action.NAME, "Show Controlpanel");
-						putValue(Action.MNEMONIC_KEY, KeyEvent.VK_C);
-					}
-					public void actionPerformed(ActionEvent e) {
-						mapPanel.getControlPanel().setVisible(!mapPanel.getControlPanel().isVisible());
-					}
-				});
-				controlPanelMenuItem.setSelected(true);
-				viewMenu.add(controlPanelMenuItem);
-				JCheckBoxMenuItem searchPanelMenuItem = new JCheckBoxMenuItem(new AbstractAction() {
-					{
-						putValue(Action.NAME, "Show SearchPanel");
-						putValue(Action.MNEMONIC_KEY, KeyEvent.VK_S);
-					}
-					public void actionPerformed(ActionEvent e) {
-						mapPanel.getSearchPanel().setVisible(!mapPanel.getSearchPanel().isVisible());
-					}
-				});
-				searchPanelMenuItem.setSelected(true);
-				viewMenu.add(searchPanelMenuItem);
-				menuBar.add(viewMenu);
-			}
-			{
-				JMenu tileServerMenu = new JMenu("Tileservers");
-				tileServerMenu.setMnemonic(KeyEvent.VK_T);
-				ButtonGroup bg = new ButtonGroup();
-				int index = 0;
-				for (final TileServer curr : TILESERVERS) {
-					JCheckBoxMenuItem item = new JCheckBoxMenuItem(curr.getURL());
-					bg.add(item);
-					item.setSelected(curr.equals(mapPanel.getTileServer()));
-					item.addActionListener(new ActionListener() {
-						public void actionPerformed(ActionEvent e) {
-							mapPanel.setTileServer(curr);
-							mapPanel.repaint();
-						}
-					});
-					if (index < 9)
-						item.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_1 + index, InputEvent.CTRL_DOWN_MASK));
-					tileServerMenu.add(item);
-					++index;
-				}
-				menuBar.add(tileServerMenu);
-			}
-			{
-				JMenu helpMenu = new JMenu("Help");
-				helpMenu.setMnemonic(KeyEvent.VK_H);
-				helpMenu.add(new AbstractAction() {
-					{
-						putValue(Action.NAME, "About");
-						putValue(Action.MNEMONIC_KEY, KeyEvent.VK_A);
-					}
-					public void actionPerformed(ActionEvent e) {
-						JOptionPane.showMessageDialog(mapPanel, ABOUT_MSG, "About MapPanel ...", JOptionPane.PLAIN_MESSAGE);
-					}
-				});
-				menuBar.add(helpMenu);
-			}
-			return menuBar;
-		}
-
-		@SuppressWarnings("unused")
-		private boolean isWebstart() {
-			return System.getProperty("javawebstart.version") != null && System.getProperty("javawebstart.version").length() > 0;
-		}
-
-	}
-
-	public static MapPanel createMapPanel(Point mapPosition, int zoom) {
-		MapPanel mapPanel = new MapPanel(mapPosition, zoom);
-		mapPanel.getOverlayPanel().setVisible(false);
-		((JComponent)mapPanel.getControlPanel()).setVisible(false);
-		return mapPanel;
-	}
-
-	public static Gui createGui(Point mapPosition, int zoom) {
-		MapPanel mapPanel = createMapPanel(mapPosition, zoom);
-		return new MapPanel.Gui(mapPanel);
-	}
-
-	public static void launchUI() {
-
-		final JFrame frame = new JFrame();
-		frame.setTitle("Map Panel");
-		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-		Dimension sz = Toolkit.getDefaultToolkit().getScreenSize();
-		frame.setSize(800, 600);
-		frame.setLocation((sz.width - frame.getWidth()) / 2, (sz.height - frame.getHeight())/2);
-
-		Gui gui = new Gui();
-		frame.getContentPane().add(gui, BorderLayout.CENTER);
-
-		JMenuBar menuBar = gui.createMenuBar();
-		frame.setJMenuBar(menuBar);
-		frame.setVisible(true);
-	}
-
-	public static void main(String[] args) {
-		SwingUtilities.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-				} catch (Exception e) {
-					// ignore
-				}
-				launchUI();
-			}
-		});
-	}
 }
 
 

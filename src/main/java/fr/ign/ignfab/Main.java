@@ -13,9 +13,6 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.geom.Point2D;
-
-
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -47,11 +44,15 @@ public class Main {
 
 	private static Point initialPosition;
 	private static Point finalPosition;
-	private static String key = "";
-
+	private static String key = "PRATIQUE";
+	private static boolean hasProxy = false;
+	private static String proxyHost = "";
+	private static String proxyPort = "";
 	private static final double tolerance = 0.001;
 
 	private static ArrayList<String> EPSG = null;
+	
+	private static final String GETNET_SETINGS_FILENAME = "key.dat";
 
 	@SuppressWarnings("resource")
 	public static void main(final String[] args) {
@@ -107,39 +108,81 @@ public class Main {
 
 
 		// Get key in args or external file
-		if (args.length == 0){
+		if (args.length == 0) {
 
-			File keyFile = new File("key.dat");
-
-			try {
-
-				Scanner scan = new Scanner(keyFile);
-				key = scan.nextLine();
-
-			} catch (FileNotFoundException e1) {
-
-			    SettingsPanel settingsPanel = new SettingsPanel();
-			    JOptionPane.showMessageDialog(null, settingsPanel, "Settings", JOptionPane.YES_NO_CANCEL_OPTION);
+			
+			
+		  try {
+			    
+			  File keyFile = new File(GETNET_SETINGS_FILENAME);
+			  if (!keyFile.exists()) {
+			    
+	              keyFile.createNewFile();
 			  
-			    key = settingsPanel.getKey();
-			    /*if (settingsPanel.getDistance() != null && !settingsPanel.getDistance().equals("")) {
-			      tolerance = Double.parseDouble(settingsPanel.getDistance());
-			    }*/
-			    // TODO proxy
-			}
-
-		}
-		else{
+			  } else { 
+				
+			    Scanner scan = new Scanner(keyFile);
+			    if (scan.hasNextLine()) {
+			      key = scan.nextLine();
+			      if (scan.hasNextLine()) {
+			        hasProxy = Boolean.valueOf(scan.nextLine());
+			        if (scan.hasNextLine()) {
+			          proxyHost = scan.nextLine();
+			          if (scan.hasNextLine()) {
+			            proxyPort = scan.nextLine();
+			          }
+			        }
+			      } 
+			    } 
+				
+			  }
+			  
+		  } catch (FileNotFoundException e1) {
+		    e1.printStackTrace();
+		  }  
+		  catch (IOException e2) {
+              e2.printStackTrace();
+		  }
+		
+		} else {
 
 			key = args[0];
+			
+			// TODO, yann d'accord ??
+			hasProxy = false;
 
 		}
+		
+		
+		// ======================================================
+		//    Settings Frame.
+		SettingsPanel settingsPanel = new SettingsPanel(key, hasProxy, proxyHost, proxyPort);
+        JOptionPane.showMessageDialog(null, settingsPanel, "Settings", JOptionPane.YES_NO_CANCEL_OPTION);
+        
+        key = settingsPanel.getKey();
+        hasProxy = settingsPanel.hasProxy();
+        proxyHost = settingsPanel.getProxyHost();
+        proxyPort = settingsPanel.getProxyPort();
 
+        // On enregistre les nouveaux paramètres dans le fichier
+        try {
+          
+          // On écrase
+          BufferedWriter erasor = new BufferedWriter(new FileWriter(GETNET_SETINGS_FILENAME));
+          erasor.write(key + "\n" + hasProxy + "\n" + proxyHost + "\n" + proxyPort + "\n");
+          erasor.close();
+          
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+        
+        // ======================================================
+        //    
 		final JFrame fen = new JFrame();
 		fen.setSize(600, 600);
 
 		// just a JPanel extension, add to any swing/awt container
-		final MapPanel mapPanel = new MapPanel(); 
+		final MapPanel mapPanel = new MapPanel(key, hasProxy, proxyHost, proxyPort); 
 
 		fen.setContentPane(mapPanel);
 		fen.setLocationRelativeTo(null);
