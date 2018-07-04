@@ -76,6 +76,26 @@ public class SimpleHttpClient {
   public void connectProxyIGN(String method) throws Exception {
     connectProxyIGN(method, "application/x-www-form-urlencoded");
   }
+  
+  public void connectProxy(String host, String port, String method) throws Exception {
+      connectProxy(host, port, method, "application/x-www-form-urlencoded");
+  }
+  
+  public void connectProxy(String host, String port, String method, String contentType) throws Exception {
+      try {
+        // Set IGN Proxy
+        Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(host, Integer.parseInt(port)));
+
+        server = (HttpURLConnection) url.openConnection(proxy);
+        server.setDoInput(true);
+        server.setDoOutput(true);
+        server.setRequestMethod(method);
+        server.setRequestProperty("Content-Type", contentType);
+        server.connect();
+      } catch (Exception e) {
+        throw new Exception("Connection failed");
+      }
+    }
 
   /**
    * 

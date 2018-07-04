@@ -69,7 +69,9 @@ public class RouteWFS {
 	
 	public static String key = "PRATIQUE";
 	public static String projection = "2154";
-	
+	public static boolean hasProxy = false;
+	public static String proxyHost = "";
+	public static String proxyPort = "";
 	
 	private static void createURL(){
 
@@ -86,7 +88,7 @@ public class RouteWFS {
 	 * @param emprise : a1,b1,a2,b2
 	 * @return int
 	 */
-	public static int getNbRouteEmprise(String bbox) {
+	private static int getNbRouteEmprise(String bbox) {
 		
 		createURL();
 
@@ -96,12 +98,11 @@ public class RouteWFS {
 
 		try {
 			SimpleHttpClient client = new SimpleHttpClient(urlService);
-			// TODO
-			//if (Test.PROXY) {
-				client.connectProxyIGN("GET", "application/json");
-			/*} else {
+			if (RouteWFS.hasProxy) {
+				client.connectProxy(RouteWFS.proxyHost, RouteWFS.proxyPort, "GET", "application/json");
+			} else {
 				client.connect("GET");
-			}*/
+			}
 
 			String response = client.getResponse();
 			System.out.println(response);
@@ -132,7 +133,7 @@ public class RouteWFS {
 	 * 
 	 * @param bbox
 	 */
-	public static BDTopoRoute getTroncon(String bbox) {
+	private static BDTopoRoute getTroncon(String bbox) {
 
 
 		BDTopoRoute bdRoute = new BDTopoRoute();
@@ -162,7 +163,12 @@ public class RouteWFS {
 			// System.out.println(urlService);
 			try {
 				SimpleHttpClient client = new SimpleHttpClient(urlService);
-				client.connect("GET");
+				// client.connect("GET");
+				if (RouteWFS.hasProxy) {
+	                client.connectProxy(RouteWFS.proxyHost, RouteWFS.proxyPort, "GET", "application/json");
+	            } else {
+	                client.connect("GET");
+	            }
 
 				String txtJson = client.getResponse();
 
@@ -170,6 +176,8 @@ public class RouteWFS {
 				bdRoute.add(gsonListe.fromJson(txtJson, BDTopoRoute.class));
 				// System.out.println("Nb feature recupere = " + bdRoute.getFeatures().size());
 
+				client.disconnect();
+				
 			} catch(Exception e) {
 				e.printStackTrace();
 				break;

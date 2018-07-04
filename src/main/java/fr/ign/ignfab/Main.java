@@ -9,6 +9,8 @@
 package fr.ign.ignfab;
 
 import java.awt.Point;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
@@ -25,6 +27,9 @@ import java.util.Scanner;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
@@ -32,6 +37,7 @@ import javax.swing.UnsupportedLookAndFeelException;
 import fr.ign.ignfab.bdtopo.RouteWFS;
 import fr.ign.ignfab.gui.MapPanel;
 import fr.ign.ignfab.gui.SettingsPanel;
+import fr.ign.ignfab.gui.MapPanel.TileServer;
 
 /**
  * 
@@ -189,8 +195,37 @@ public class Main {
 		fen.setResizable(false);
 		fen.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		fen.setTitle("Network Extraction");
-		fen.setVisible(true);
-
+		
+		
+		JMenuBar menuBar = new JMenuBar();
+        JMenu fileMenu = new JMenu("File");
+        JMenuItem item = new JMenuItem("Exit");
+        item.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                if (fen != null) {
+                    fen.dispose();
+                }
+            }
+        });
+        fileMenu.add(item);
+        menuBar.add(fileMenu);
+		
+        JMenu tileServerMenu = new JMenu("Tileservers");
+        TileServer[] servers = mapPanel.getTileServers();
+        for (int i = 0; i < servers.length; i++) {
+            TileServer server = servers[i];
+            item = new JMenuItem(server.getName());
+            item.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent e) {
+                    mapPanel.setTileServer(server);
+                    mapPanel.repaint();
+                }
+            });
+            tileServerMenu.add(item);
+        }
+        menuBar.add(tileServerMenu);
+        fen.setJMenuBar(menuBar);
+        
 
 		mapPanel.setZoom(15); // set some zoom level (1-18 are valid)
 		double lon = 2.445;
@@ -199,6 +234,7 @@ public class Main {
 		mapPanel.setCenterPosition(position); // sets to the computed position
 		mapPanel.repaint(); // if already visible trigger a repaint here
 
+		fen.setVisible(true);
 
 		mapPanel.addMouseListener(new MouseListener() {
 
@@ -276,6 +312,10 @@ public class Main {
 								mapPanel.setCursor(new java.awt.Cursor(java.awt.Cursor.WAIT_CURSOR));
 
 								RouteWFS.key = key;
+								RouteWFS.hasProxy = hasProxy;
+								RouteWFS.proxyHost = proxyHost;
+								RouteWFS.proxyPort = proxyPort;
+								
 								RouteWFS.externalFrame = fen;
 								String message = RouteWFS.getNetwork(BBOX, tolerance, output, true);
 
