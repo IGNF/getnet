@@ -30,7 +30,7 @@ public class SettingsPanel extends JPanel implements ActionListener {
   private JRadioButton yesButton;
   private JTextField proxyHostField;
   private JTextField proxyPortField;
-  private JTextField distanceField;
+  // private JTextField distanceField;
   
   /**
    * Default constructor.
@@ -39,7 +39,7 @@ public class SettingsPanel extends JPanel implements ActionListener {
     
     FormLayout layout = new FormLayout(
         "4dlu, pref, 4dlu, pref, 4dlu, pref, pref, 4dlu",
-        "4dlu, pref, 10dlu, pref, pref, pref, 10dlu, pref, 4dlu");
+        "4dlu, pref, 10dlu, pref, pref, pref, 4dlu");
     this.setLayout(layout);
     CellConstraints cc = new CellConstraints();
     
@@ -87,9 +87,9 @@ public class SettingsPanel extends JPanel implements ActionListener {
     // =========================================================================
     //   Distance.
     
-    add(new JLabel("Distance: ", SwingConstants.RIGHT), cc.xy(2, 8));
+    /*add(new JLabel("Distance: ", SwingConstants.RIGHT), cc.xy(2, 8));
     distanceField = new JTextField(25);
-    add(distanceField, cc.xyw(4, 8, 3));
+    add(distanceField, cc.xyw(4, 8, 3));*/
   }
   
   
@@ -114,8 +114,8 @@ public class SettingsPanel extends JPanel implements ActionListener {
   }
   
   
-  public String getDistance() {
-    return this.distanceField.getText();
-  }
+//  public String getDistance() {
+//    return this.distanceField.getText();
+//  }
 
 }

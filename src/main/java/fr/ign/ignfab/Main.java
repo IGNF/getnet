@@ -49,7 +49,7 @@ public class Main {
 	private static Point finalPosition;
 	private static String key = "";
 
-	private static double tolerance = 0.001;
+	private static final double tolerance = 0.001;
 
 	private static ArrayList<String> EPSG = null;
 
@@ -122,9 +122,9 @@ public class Main {
 			    JOptionPane.showMessageDialog(null, settingsPanel, "Settings", JOptionPane.YES_NO_CANCEL_OPTION);
 			  
 			    key = settingsPanel.getKey();
-			    if (settingsPanel.getDistance() != null && !settingsPanel.getDistance().equals("")) {
+			    /*if (settingsPanel.getDistance() != null && !settingsPanel.getDistance().equals("")) {
 			      tolerance = Double.parseDouble(settingsPanel.getDistance());
-			    }
+			    }*/
 			    // TODO proxy
 			}
 
