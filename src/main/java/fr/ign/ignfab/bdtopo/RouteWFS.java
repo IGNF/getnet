@@ -15,6 +15,7 @@ import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.Authenticator;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,6 +42,7 @@ import fr.ign.cogit.geoxygene.feature.DefaultFeature;
 import fr.ign.cogit.geoxygene.feature.FT_FeatureCollection;
 import fr.ign.cogit.geoxygene.spatial.coordgeom.GM_LineString;
 import fr.ign.cogit.geoxygene.util.conversion.JtsGeOxygene;
+import fr.ign.ignfab.util.AuthIGNGeoportal;
 import fr.ign.ignfab.util.SimpleHttpClient;
 import fr.ign.ignfab.cartetopo.ChargeurCarteTopo;
 
@@ -69,16 +71,28 @@ public class RouteWFS {
 	
 	public static String key = "PRATIQUE";
 	public static String projection = "2154";
+	
 	public static boolean hasProxy = false;
 	public static String proxyHost = "";
 	public static String proxyPort = "";
 	
-	private static void createURL(){
+	public static boolean hasAuth = false;
+    public static String username = "";
+    public static String passwd = "";
+	
+	private static void createURL() {
 
-		URL_WFS = "http://wxs.ign.fr/"+key+"/geoportail/wfs?"
+		URL_WFS = "http://wxs.ign.fr/" + key + "/geoportail/wfs?"
 				+ "service=WFS&request=GetFeature&typeName=" + URL_TYPENAME 
 				+ "&srsName=EPSG:"+projection+"&version=2.0.0&outputFormat=json";
 		URL_HITS = URL_WFS + "&resulttype=hits";
+		
+		if (hasAuth) {
+		    URL_WFS = "https://wxs.ign.fr/" + key + "/geoportail/wfs?"
+	                + "service=WFS&request=GetFeature&typeName=" + URL_TYPENAME 
+	                + "&srsName=EPSG:"+projection+"&version=2.0.0&outputFormat=json";
+		    URL_HITS = URL_WFS + "&resulttype=hits";
+		}
 
 	}
 
@@ -97,12 +111,19 @@ public class RouteWFS {
 		int nbHits = 0;
 
 		try {
+		    
+		    if (RouteWFS.hasAuth) {
+                Authenticator.setDefault(new AuthIGNGeoportal(RouteWFS.username, RouteWFS.passwd));
+            }
+		    
 			SimpleHttpClient client = new SimpleHttpClient(urlService);
 			if (RouteWFS.hasProxy) {
 				client.connectProxy(RouteWFS.proxyHost, RouteWFS.proxyPort, "GET", "application/json");
 			} else {
 				client.connect("GET");
 			}
+			
+			
 
 			String response = client.getResponse();
 			System.out.println(response);
@@ -162,6 +183,9 @@ public class RouteWFS {
 			String urlService = URL_WFS + "&BBOX=" + bbox + "&count=" + NB_PER_PAGE + "&startIndex=" + offset;
 			// System.out.println(urlService);
 			try {
+			    if (RouteWFS.hasAuth) {
+	                Authenticator.setDefault(new AuthIGNGeoportal(RouteWFS.username, RouteWFS.passwd));
+	            }
 				SimpleHttpClient client = new SimpleHttpClient(urlService);
 				// client.connect("GET");
 				if (RouteWFS.hasProxy) {

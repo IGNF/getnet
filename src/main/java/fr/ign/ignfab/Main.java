@@ -50,10 +50,17 @@ public class Main {
 
 	private static Point initialPosition;
 	private static Point finalPosition;
+	
 	private static String key = "PRATIQUE";
+	private static boolean hasAuth = false;
+	private static String username = "";
+	private static String password = "";
+	
 	private static boolean hasProxy = false;
 	private static String proxyHost = "";
 	private static String proxyPort = "";
+	
+	
 	private static final double tolerance = 0.001;
 
 	private static ArrayList<String> EPSG = null;
@@ -84,14 +91,14 @@ public class Main {
 			String os = System.getProperty("os.name").toLowerCase();
 
 			// For windows os
-			if (os.contains("windows")){
+			if (os.contains("windows")) {
 
 				UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
 
 			}
 
 			// For linux os
-			if ((os.contains("linux")) || (os.contains("unix"))){
+			if ((os.contains("linux")) || (os.contains("unix"))) {
 
 				UIManager.setLookAndFeel("com.sun.java.swing.plaf.gtk.GTKLookAndFeel");
 
@@ -136,6 +143,15 @@ public class Main {
 			          proxyHost = scan.nextLine();
 			          if (scan.hasNextLine()) {
 			            proxyPort = scan.nextLine();
+			            if (scan.hasNextLine()) {
+			              hasAuth = Boolean.valueOf(scan.nextLine());
+			              if (scan.hasNextLine()) {
+			                username = scan.nextLine();
+			                if (scan.hasNextLine()) {
+			                  password = scan.nextLine();
+			                }
+			              }
+			            }
 			          }
 			        }
 			      } 
@@ -152,30 +168,32 @@ public class Main {
 		
 		} else {
 
+		    // Des arguments en paramètre. Pour l'instant juste la clé
 			key = args[0];
 			
-			// TODO, yann d'accord ??
-			hasProxy = false;
-
 		}
 		
 		
 		// ======================================================
 		//    Settings Frame.
-		SettingsPanel settingsPanel = new SettingsPanel(key, hasProxy, proxyHost, proxyPort);
+		// TODO
+		SettingsPanel settingsPanel = new SettingsPanel(key, hasProxy, proxyHost, proxyPort, hasAuth, username, password);
         JOptionPane.showMessageDialog(null, settingsPanel, "Settings", JOptionPane.YES_NO_CANCEL_OPTION);
         
         key = settingsPanel.getKey();
         hasProxy = settingsPanel.hasProxy();
         proxyHost = settingsPanel.getProxyHost();
         proxyPort = settingsPanel.getProxyPort();
+        hasAuth = settingsPanel.hasAuth();
+        username = settingsPanel.getUser();
+        password = settingsPanel.getPasswd();
 
         // On enregistre les nouveaux paramètres dans le fichier
         try {
           
           // On écrase
           BufferedWriter erasor = new BufferedWriter(new FileWriter(GETNET_SETINGS_FILENAME));
-          erasor.write(key + "\n" + hasProxy + "\n" + proxyHost + "\n" + proxyPort + "\n");
+          erasor.write(key + "\n" + hasProxy + "\n" + proxyHost + "\n" + proxyPort + "\n" + hasAuth + "\n" + username + "\n" + password + "\n");
           erasor.close();
           
         } catch (Exception e) {
@@ -188,7 +206,7 @@ public class Main {
 		fen.setSize(600, 600);
 
 		// just a JPanel extension, add to any swing/awt container
-		final MapPanel mapPanel = new MapPanel(key, hasProxy, proxyHost, proxyPort); 
+		final MapPanel mapPanel = new MapPanel(key, hasProxy, proxyHost, proxyPort, hasAuth, username, password); 
 
 		fen.setContentPane(mapPanel);
 		fen.setLocationRelativeTo(null);
@@ -313,8 +331,21 @@ public class Main {
 
 								RouteWFS.key = key;
 								RouteWFS.hasProxy = hasProxy;
-								RouteWFS.proxyHost = proxyHost;
-								RouteWFS.proxyPort = proxyPort;
+								if (hasProxy) {
+								    RouteWFS.proxyHost = proxyHost;
+								    RouteWFS.proxyPort = proxyPort;
+								} else {
+								    RouteWFS.proxyHost = "";
+                                    RouteWFS.proxyPort = "";
+								}
+								RouteWFS.hasAuth = hasAuth;
+								if (hasAuth) {
+								    RouteWFS.username = username;
+								    RouteWFS.passwd = password;
+								} else {
+								    RouteWFS.username = "";
+                                    RouteWFS.passwd = "";
+								}
 								
 								RouteWFS.externalFrame = fen;
 								String message = RouteWFS.getNetwork(BBOX, tolerance, output, true);

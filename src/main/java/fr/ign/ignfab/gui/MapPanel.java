@@ -41,6 +41,7 @@ import java.awt.event.MouseWheelListener;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.beans.PropertyChangeListener;
+import java.net.Authenticator;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -68,6 +69,7 @@ import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 
 import fr.ign.ignfab.bdtopo.PyramideFondOrtho;
+import fr.ign.ignfab.util.AuthIGNGeoportal;
 
 
 
@@ -126,6 +128,7 @@ public class MapPanel extends JPanel {
 	public static double[] RES = new double[22];
 	
 	private boolean hasProxy = false;
+	// private boolean hasAuth = false;
 	
 	private PyramideFondOrtho pyramideFondOrtho;
 	
@@ -260,26 +263,29 @@ public class MapPanel extends JPanel {
 	private Rectangle magnifyRegion;
 	
 	
-	public MapPanel(String key, boolean hasProxy, String proxyHost, String proxyPort) {
+	public MapPanel(String key, boolean hasProxy, String proxyHost, String proxyPort, boolean hasAuth, String username, String passwd) {
 		
 		this.hasProxy = hasProxy;
 		
-		//    private static String LAYER = "GEOGRAPHICALGRIDSYSTEMS.MAPS";
-	    //    private static String LAYER = "GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-EXPRESS.ROUTIER";
-	    //    private static String LAYER = "GEOGRAPHICALGRIDSYSTEMS.PLANIGN";
-	    //    private static String LAYER = "ORTHOIMAGERY.ORTHOPHOTOS";
+		String url = "http://wxs.ign.fr/" + key + "/geoportail/wmts";
+		if (hasAuth) {
+		    Authenticator.setDefault(new AuthIGNGeoportal(username, passwd));
+		    url = "https://wxs.ign.fr/" + key + "/geoportail/wmts";
+		} 
 		
 		TILESERVERS = new TileServer[3];
-		TILESERVERS[0] = new TileServer("Photographies aériennes", "http://wxs.ign.fr/" + key + "/geoportail/wmts?LAYER=ORTHOIMAGERY.ORTHOPHOTOS&"
+		// private static String LAYER = "GEOGRAPHICALGRIDSYSTEMS.MAPS";
+        TILESERVERS[0] = new TileServer("Photographies aériennes", url + "?LAYER=ORTHOIMAGERY.ORTHOPHOTOS&"
                 + "EXCEPTIONS=text/xml&FORMAT=image/jpeg&SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&STYLE=normal&TILEMATRIXSET=PM&", 21);
-	    TILESERVERS[1] = new TileServer("Plan IGN", "http://wxs.ign.fr/" + key + "/geoportail/wmts?LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGN&"
+        TILESERVERS[1] = new TileServer("Plan IGN", url + "?LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGN&"
                 + "EXCEPTIONS=text/xml&FORMAT=image/jpeg&SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&STYLE=normal&TILEMATRIXSET=PM&", 21);
-	    TILESERVERS[2] = new TileServer("Cartes SCAN Express Routier", "http://wxs.ign.fr/" + key + "/geoportail/wmts?LAYER=GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-EXPRESS.ROUTIER&"
+        TILESERVERS[2] = new TileServer("Cartes SCAN Express Routier", url + "?LAYER=GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-EXPRESS.ROUTIER&"
                 + "EXCEPTIONS=text/xml&FORMAT=image/jpeg&SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&STYLE=normal&TILEMATRIXSET=PM&", 21);
-	    tileServer = TILESERVERS[0];
-	    
+        
+        tileServer = TILESERVERS[0];
+		
 	    pyramideFondOrtho = new PyramideFondOrtho();
-	    this.pyramideFondOrtho.getTileMatrix(key);
+	    this.pyramideFondOrtho.getTileMatrix();
 	    
 	    Point mapPosition = new Point(8282, 5179); 
 	    int zoom = 6;
@@ -292,29 +298,20 @@ public class MapPanel extends JPanel {
             log.log(Level.INFO, "failed to check for win7", e);
         }
 
-      setLayout(new MapLayout());
-      setOpaque(true);
-      setBackground(new Color(0xc0, 0xc0, 0xc0));
-      add(overlayPanel);
-      add(controlPanel);
-      addMouseListener(mouseListener);
-      addMouseMotionListener(mouseListener);
-      addMouseWheelListener(mouseListener);
-      //add(slider);
-      setZoom(zoom);
-      setMapPosition(mapPosition);
-      //        if (false) {
-      //            SwingUtilities.invokeLater(new Runnable() {
-      //                public void run() {
-      //                    setZoom(10);
-      //                    setCenterPosition(computePosition(new Point2D.Double(-0.11, 51.51)));
-      //                }
-      //            });
-      //        }
-
-      // searchPanel = new SearchPanel();
-      checkTileServers();
-      checkActiveTileServer();
+	    setLayout(new MapLayout());
+	    setOpaque(true);
+	    setBackground(new Color(0xc0, 0xc0, 0xc0));
+	    add(overlayPanel);
+	    add(controlPanel);
+	    addMouseListener(mouseListener);
+	    addMouseMotionListener(mouseListener);
+	    addMouseWheelListener(mouseListener);
+	    // add(slider);
+	    setZoom(zoom);
+	    setMapPosition(mapPosition);
+      
+	    checkTileServers();
+	    checkActiveTileServer();
 	    
 		RES[0] = 156543.0339280410;
 		RES[1] = 78271.5169640205;
@@ -687,29 +684,16 @@ public class MapPanel extends JPanel {
 				    final String urlAddress = getTileString(mapPanel, mapPanel.tileServer, x, y, zoom, d);
 					try {
 						
-//					    URL url = new URL(urlAddress);
-//                        HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
-//                        httpConn.addRequestProperty("User-Agent","GetNet");
-//                        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-//                        connection.connect();
-//                        int responseCode = connection.getResponseCode();
-//                        if (responseCode == 200) {
-//                            InputStream is = url.openStream ();
-//                            byte[] imagedata = IOUtils.toByteArray(is);
-//                            image = Toolkit.getDefaultToolkit().createImage(imagedata);
-//                        }
-					    
-					    System.setProperty("http.agent", "GetNet");
 					    if (mapPanel.hasProxy) {
-					      // System.setProperty("http.proxyHost", "proxy.ign.fr");
-					      // System.setProperty("http.proxyPort", "3128");
-					      // System.setProperty("http.proxyHost", "");
-					      // System.setProperty("http.proxyPort", "");
+					        // System.setProperty("http.proxyHost", "proxy.ign.fr");
+					        // System.setProperty("http.proxyPort", "3128");
+					        // System.setProperty("http.proxyHost", "");
+					        // System.setProperty("http.proxyPort", "");
 					    }
+
 					    URL url = new URL(urlAddress);
 					    image = Toolkit.getDefaultToolkit().getImage(url);
 					    
-						
 					} catch (Exception e) {
 						log.log(Level.SEVERE, "failed to load url \"" + urlAddress + "\"", e);
 					}

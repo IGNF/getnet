@@ -60,28 +60,7 @@
 
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-				<version>3.0.2</version>
-				<configuration>
-					<archive>
-						<index>true</index>
-						<manifest>
-							<addClasspath>true</addClasspath>
-							<classpathPrefix></classpathPrefix>
-							<mainClass>fr.ign.ignfab.Main</mainClass>
-						</manifest>
-						<manifestEntries>
-                            <Class-Path>.</Class-Path>
-                        </manifestEntries>
-					</archive>
-					<finalName>getnet</finalName>
-				</configuration>
-			</plugin>
-
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-dependency-plugin</artifactId>
-				<version>3.1.1</version>
 				<executions>
 					<execution>
 						<id>copy-dependencies</id>
@@ -90,39 +69,52 @@
 							<goal>copy-dependencies</goal>
 						</goals>
 						<configuration>
-							<outputDirectory>${project.build.directory}/classes/</outputDirectory>
-							<overWriteReleases>false</overWriteReleases>
-							<overWriteSnapshots>false</overWriteSnapshots>
-							<overWriteIfNewer>true</overWriteIfNewer>
+							<outputDirectory>${project.build.directory}/lib</outputDirectory>
 							<excludeTransitive>true</excludeTransitive>
 						</configuration>
 					</execution>
 				</executions>
 			</plugin>
-			
+
 			<plugin>
-                <artifactId>maven-resources-plugin</artifactId>
-                <version>3.1.0</version>
-                <executions>
-                    <execution>
-                        <id>copy-resources</id>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${basedir}/target</outputDirectory>
-                            <includeEmptyDirs>true</includeEmptyDirs>
-                            <resources>
-                                                <resource>
-                  <directory>src/main/resources/</directory>
-                  <filtering>true</filtering>
-                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>3.1.0</version>
+				<configuration>
+					<archive>
+						<manifest>
+							<addClasspath>true</addClasspath>
+							<classpathPrefix>lib/</classpathPrefix>
+							<mainClass>fr.ign.ignfab.Main</mainClass>
+						</manifest>
+					</archive>
+					<finalName>getnet-1.0</finalName>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>3.1.0</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+						<configuration>
+							<archive>
+								<manifest>
+									<mainClass>fr.ign.ignfab.Main</mainClass>
+								</manifest>
+							</archive>
+							<descriptorRefs>
+								<descriptorRef>jar-with-dependencies</descriptorRef>
+							</descriptorRefs>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 
 		</plugins>
 	</build>
@@ -173,11 +165,6 @@
 
 		<dependency>
 			<groupId>com.jgoodies</groupId>
-			<artifactId>jgoodies-common</artifactId>
-			<version>1.8.1</version>
-		</dependency>
-		<dependency>
-			<groupId>com.jgoodies</groupId>
 			<artifactId>jgoodies-forms</artifactId>
 			<version>1.9.0</version>
 		</dependency>
@@ -186,6 +173,11 @@
 		<dependency>
 			<groupId>org.geotools</groupId>
 			<artifactId>gt-referencing</artifactId>
+			<version>19.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.geotools</groupId>
+			<artifactId>gt-epsg-hsql</artifactId>
 			<version>19.1</version>
 		</dependency>
 		<dependency>
@@ -203,8 +195,12 @@
 			<artifactId>gt-opengis</artifactId>
 			<version>19.1</version>
 		</dependency>
-		<!-- ::jar::compile org.geotools:gt-main:jar:19.1:compile org.geotools:gt-api:jar:19.1:compile 
-			org.geotools:gt-opengis:jar:19.1:compile -->
+		<dependency>
+			<groupId>org.geotools</groupId>
+			<artifactId>gt-metadata</artifactId>
+			<version>19.1</version>
+		</dependency>
+
 
 	</dependencies>
 

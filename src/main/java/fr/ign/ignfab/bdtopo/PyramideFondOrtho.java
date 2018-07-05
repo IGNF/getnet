@@ -8,8 +8,7 @@
  ******************************************************************************/
 package fr.ign.ignfab.bdtopo;
 
-import java.io.ByteArrayInputStream;
-import java.nio.charset.StandardCharsets;
+import java.io.File;
 import java.util.HashMap;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -19,8 +18,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-
-import fr.ign.ignfab.util.SimpleHttpClient;
 
 /**
  * WMTS Capabilities to get some metadata.
@@ -36,21 +33,18 @@ public class PyramideFondOrtho {
      * 
      * @param args
      */
-    public void getTileMatrix(String key) {
+    public void getTileMatrix() {
         
-        String urlService = "http://wxs.ign.fr/" + key + "/geoportail/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetCapabilities";
         try {
-            SimpleHttpClient client = new SimpleHttpClient(urlService);
-            client.connect("GET");
-            String response = client.getResponse();
-            client.disconnect();
+            ClassLoader classLoader = getClass().getClassLoader();
+            File wmtsFile = new File(classLoader.getResource("wmts.xml").getFile());
             
             DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
             builderFactory.setNamespaceAware(true);
             builderFactory.setValidating(false);
             DocumentBuilder documentBuilder = builderFactory.newDocumentBuilder();
 
-            Document rawDocument = documentBuilder.parse(new ByteArrayInputStream(response.getBytes(StandardCharsets.UTF_8)));
+            Document rawDocument = documentBuilder.parse(wmtsFile);
             Element capabilities = rawDocument.getDocumentElement();
             NodeList tileMS = capabilities.getElementsByTagName("TileMatrixSet");
             for (int i = 0; i < tileMS.getLength(); i++) {
@@ -92,8 +86,6 @@ public class PyramideFondOrtho {
             e.printStackTrace();
         }
 
-        
-        
     }
     
     
