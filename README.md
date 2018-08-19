@@ -2,6 +2,9 @@
 
 This module provide a tools to download a BDTopo network extract from WFS.
 
+You can download the jar file here : https://github.com/IGNF/getnet/releases/download/1.0/GetNet.jar
+
+
 <h2>User's guide</h2>
 
 <h3>With the graphical front-end</h3>
