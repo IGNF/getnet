@@ -9,6 +9,7 @@
 package fr.ign.ignfab.bdtopo;
 
 import java.io.File;
+import java.io.InputStream;
 import java.util.HashMap;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -37,14 +38,18 @@ public class PyramideFondOrtho {
         
         try {
             ClassLoader classLoader = getClass().getClassLoader();
-            File wmtsFile = new File(classLoader.getResource("wmts.xml").getFile());
+            // File wmtsFile = new File(classLoader.getResource("wmts.xml").getFile());
+            
+            InputStream is = getClass().getResourceAsStream("wmts.xml");
             
             DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
             builderFactory.setNamespaceAware(true);
             builderFactory.setValidating(false);
             DocumentBuilder documentBuilder = builderFactory.newDocumentBuilder();
 
-            Document rawDocument = documentBuilder.parse(wmtsFile);
+            // Document rawDocument = documentBuilder.parse(wmtsFile);
+            Document rawDocument = documentBuilder.parse(is);
+            
             Element capabilities = rawDocument.getDocumentElement();
             NodeList tileMS = capabilities.getElementsByTagName("TileMatrixSet");
             for (int i = 0; i < tileMS.getLength(); i++) {

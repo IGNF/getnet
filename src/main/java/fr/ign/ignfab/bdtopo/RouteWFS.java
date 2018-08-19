@@ -204,7 +204,9 @@ public class RouteWFS {
 				
 			} catch(Exception e) {
 				e.printStackTrace();
-				break;
+				// break;
+				System.out.print("ERROR WITH : ");
+				System.out.print(urlService);
 			}
 			offset = offset + NB_PER_PAGE;
 		}
@@ -379,13 +381,81 @@ public class RouteWFS {
 
 	}
 	
+
+    /**
+     * 
+     * @param bbox
+     */
+    @SuppressWarnings("deprecation")
+    public static List<String> getBDTopo(String bbox, boolean gui) {
+    
+        List<String> CSV = new ArrayList<>();
+    
+        if (gui){
+            
+            f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            Container content = f.getContentPane();
+            progressBar.setValue(0);
+            progressBar.setStringPainted(true);
+    
+            progressBar.setForeground(Color.GREEN.darker());
+            content.add(label, BorderLayout.NORTH);
+            content.add(progressBar, BorderLayout.SOUTH);
+            
+            int x = externalFrame.location().x + externalFrame.size().width/2 - 150;
+            int y =  externalFrame.location().y + + externalFrame.size().height/2 - 30;
+    
+            f.setLocation(x, y);
+            f.setResizable(false);
+            f.setSize(300, 60);
+            f.setVisible(true);
+    
+        }
+    
+        // BDTopo
+        System.out.println("Network download:");
+        BDTopoRoute bdRoute = getTroncon(bbox);
+    
+        System.out.println("BDTopo in CSV:");
+        FT_FeatureCollection<DefaultFeature> collection = bdRoute.getCollectionRoute();
+        
+        int cpt = 1;
+        for (DefaultFeature feature : collection.getElements()) {
+        
+            String ligne = "";
+
+            ligne += cpt + ";";
+            ligne += feature.getAttribute("cleabs") + ";";
+            ligne += feature.getAttribute("nature") + ";";
+            
+            IGeometry geOxyGeom = ((GM_LineString)feature.getGeom());
+            Geometry geom = null;
+            try {
+                geom = JtsGeOxygene.makeJtsGeom(geOxyGeom);
+                ligne += geom.toText();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+                
+            CSV.add(ligne);
+            cpt++;
+        }
+        
+        return CSV;
+        
+    }
+
+
+    
+  
+    
 	
-	public static String getNetwork(ArrayList<Double> BBOX, double tolerance, String output, boolean gui){
+	public static String getNetwork (ArrayList<Double> BBOX, double tolerance, String output, boolean gui) {
 
         String out = "";
 
         System.out.println("----------------------------------------------------------------------");
-        System.out.println("ROAD MAP EXTRACTION");
+        System.out.println("    ROAD MAP EXTRACTION");
         System.out.println("----------------------------------------------------------------------");
 
         long tini = System.currentTimeMillis();

@@ -286,6 +286,8 @@ public class Main {
 					BBOX.add(ymin);
 					BBOX.add(xmax);
 					BBOX.add(ymax);
+					
+					System.out.println(xmin + "," + ymin + "," + xmax + "," + ymax);
 
 					JFileChooser chooser = new JFileChooser("."); 
 					int rep2 = chooser.showOpenDialog(null);

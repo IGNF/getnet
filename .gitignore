@@ -3,3 +3,4 @@
 /.project
 /target
 /key.dat
+/data/*.csv

@@ -271,7 +271,23 @@ public class MapPanel extends JPanel {
 		if (hasAuth) {
 		    Authenticator.setDefault(new AuthIGNGeoportal(username, passwd));
 		    url = "https://wxs.ign.fr/" + key + "/geoportail/wmts";
-		} 
+		    if (hasProxy) {
+		        System.setProperty("http.proxyHost", proxyHost);
+		        // System.out.println(proxyHost);
+		        System.setProperty("http.proxyPort", proxyPort);
+		    } else {
+		        System.setProperty("http.proxyHost", "");
+		        System.setProperty("http.proxyPort", "");
+		    }
+		} else {
+		    if (hasProxy) {
+                System.setProperty("http.proxyHost", proxyHost);
+                System.setProperty("http.proxyPort", proxyPort);
+            } else {
+                System.setProperty("http.proxyHost", "");
+                System.setProperty("http.proxyPort", "");
+            }
+		}
 		
 		TILESERVERS = new TileServer[3];
 		// private static String LAYER = "GEOGRAPHICALGRIDSYSTEMS.MAPS";
@@ -380,7 +396,8 @@ public class MapPanel extends JPanel {
 		return tileServer;
 	}
 	
-	public TileServer[] getTileServers() {
+	@SuppressWarnings("static-access")
+    public TileServer[] getTileServers() {
         return this.TILESERVERS;
     }
 
