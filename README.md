@@ -21,6 +21,7 @@ You can download the jar file here : https://github.com/IGNF/getnet/releases/dow
 
 ```shell
 
-java -Dhttp.proxyHost=proxy.ign.fr -Dhttp.proxyPort=3128 -jar getnet.jar PRATIQUE 2.39837991 48.74964230 2.44213927 48.78402541 0.01 "network.wkt" 4326
+java -Dhttp.proxyHost=proxy.ign.fr -Dhttp.proxyPort=3128 -jar getnet.jar PRATIQUE \\
+          2.39837991 48.74964230 2.44213927 48.78402541 0.01 "network.wkt" 4326
 
 ```
