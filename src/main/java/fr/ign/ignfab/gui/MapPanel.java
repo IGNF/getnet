@@ -270,11 +270,14 @@ public class MapPanel extends JPanel {
 		String url = "http://wxs.ign.fr/" + key + "/geoportail/wmts";
 		if (hasAuth) {
 		    Authenticator.setDefault(new AuthIGNGeoportal(username, passwd));
+		    System.out.println(username);
+		    System.out.println(passwd);
 		    url = "https://wxs.ign.fr/" + key + "/geoportail/wmts";
 		    if (hasProxy) {
 		        System.setProperty("http.proxyHost", proxyHost);
-		        // System.out.println(proxyHost);
+		        System.out.println(proxyHost);
 		        System.setProperty("http.proxyPort", proxyPort);
+		        System.out.println(proxyPort);
 		    } else {
 		        System.setProperty("http.proxyHost", "");
 		        System.setProperty("http.proxyPort", "");
@@ -288,7 +291,8 @@ public class MapPanel extends JPanel {
                 System.setProperty("http.proxyPort", "");
             }
 		}
-		
+		System.out.println(url + "?LAYER=ORTHOIMAGERY.ORTHOPHOTOS&"
+                + "EXCEPTIONS=text/xml&FORMAT=image/jpeg&SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&STYLE=normal&TILEMATRIXSET=PM&");
 		TILESERVERS = new TileServer[3];
 		// private static String LAYER = "GEOGRAPHICALGRIDSYSTEMS.MAPS";
         TILESERVERS[0] = new TileServer("Photographies aériennes", url + "?LAYER=ORTHOIMAGERY.ORTHOPHOTOS&"

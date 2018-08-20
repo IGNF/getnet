@@ -131,33 +131,15 @@
 
 		<dependency>
 			<groupId>org.geotools</groupId>
-			<artifactId>gt-shapefile</artifactId>
-			<version>${geotools.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.geotools</groupId>
 			<artifactId>gt-data</artifactId>
 			<version>${geotools.version}</version>
 		</dependency>
-		<dependency>
-			<groupId>org.geotools</groupId>
-			<artifactId>gt-wms</artifactId>
-			<version>${geotools.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.geotools</groupId>
-			<artifactId>gt-jdbc</artifactId>
-			<version>${geotools.version}</version>
-		</dependency>
-
 
 		<dependency>
 			<groupId>net.java.dev.jsr-275</groupId>
 			<artifactId>jsr-275</artifactId>
 			<version>1.0-beta-2</version>
 		</dependency>
-
-
 		<dependency>
 			<groupId>org.geotools</groupId>
 			<artifactId>gt-main</artifactId>
@@ -336,6 +318,8 @@
 
 										<echo>Copy Manifest</echo>
 										<copy file="${basedir}/install/MANIFEST.MF" todir="${basedir}/target/classes/" />
+										
+										<echo>Copy tools for jar executable</echo>
                                         <copy todir="${basedir}/target/classes/">
                                             <fileset dir="${basedir}/install/" />
                                         </copy>
