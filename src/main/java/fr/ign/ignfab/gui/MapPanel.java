@@ -270,14 +270,14 @@ public class MapPanel extends JPanel {
 		String url = "http://wxs.ign.fr/" + key + "/geoportail/wmts";
 		if (hasAuth) {
 		    Authenticator.setDefault(new AuthIGNGeoportal(username, passwd));
-		    System.out.println(username);
-		    System.out.println(passwd);
+		    // System.out.println(username);
+		    // System.out.println(passwd);
 		    url = "https://wxs.ign.fr/" + key + "/geoportail/wmts";
 		    if (hasProxy) {
 		        System.setProperty("http.proxyHost", proxyHost);
-		        System.out.println(proxyHost);
+		        // System.out.println(proxyHost);
 		        System.setProperty("http.proxyPort", proxyPort);
-		        System.out.println(proxyPort);
+		        // System.out.println(proxyPort);
 		    } else {
 		        System.setProperty("http.proxyHost", "");
 		        System.setProperty("http.proxyPort", "");
@@ -712,6 +712,7 @@ public class MapPanel extends JPanel {
 					        // System.setProperty("http.proxyPort", "");
 					    }
 
+					    // Authenticator.setDefault(new AuthIGNGeoportal("", ""));
 					    URL url = new URL(urlAddress);
 					    image = Toolkit.getDefaultToolkit().getImage(url);
 					    
