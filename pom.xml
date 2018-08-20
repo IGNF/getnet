@@ -348,6 +348,7 @@
 										    <fileset dir="${basedir}/target/classes/" includes="*.jar" />
 										    
 										    <fileset dir="${basedir}/target/classes/" includes="wmts.xml" />
+										    <fileset dir="${basedir}/target/classes/" includes="**/*.xml" />
 										    <fileset dir="${basedir}/target/classes/" includes="log4j.properties" />
 										
 										</jar>
